@@ -1,0 +1,9 @@
+## Logs
+
+Know when to use each log level
+`FATAL` - denotes very severe error events that will presumably lead the application to abort. Usually, these can end up in catastrophic failures.
+`ERROR` - denotes error events that might still allow the application to continue running, with reduced capabilities in the affected paths.
+`WARN` - denotes less-harmful events than errors. Usually, they do not lead to any degradation of capabilities or complete failure of the application. However, they are still red flags and `must` be investigated.
+`INFO` - denotes the important event banners and informational messages in the application behaviour.
+`DEBUG` - denotes specific and detailed information, mainly used for debugging purposes. These logs help us step through the code.
+`TRACE` - denotes most low-level information like stack traces of code to provide the most information on a certain event/context. These logs help us inspect the variable values and full error stacks.

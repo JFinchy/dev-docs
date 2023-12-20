@@ -1,0 +1,68 @@
+## High Level Code Opinions
+
+Simple abstraction understanding - something reusable that you can use from different places in your code base.
+
+Avoid Hasty Abstractions
+> Prefer duplication over the wrong abstraction
+
+> Write code that is easy to delete, not easy to extend.
+I find this blog post as a great starting place for development [here](https://programmingisterrible.com/post/139222674273/how-to-write-disposable-code-in-large-systems).
+
+Steps: 
+
+0. Don't write code: Although the more code you have the harder it is to get rid of, saving one line of code saves absolutely nothing on its own.
+1. Copy-paste code: Building reusable code is something that’s easier to do in hindsight with a couple of examples of use in the code base, than foresight of ones you might want later. A little redundancy is healthy. It’s good to copy-paste code a couple of times, rather than making a library function, just to get a handle on how it will be used. Once you make something a shared API, you make it harder to change.
+2. Don't copy-paste code: When you’ve copy and pasted something enough times, maybe it’s time to pull it up to a function. Think functions without any state, or functions with a little bit of global knowledge like environment variables. The less specific the code is to your application or project, the easier they are to re-use and the less likely to change or be deleted.
+3. Write more boilerplate
+4. Don't write more boilerplate
+5. Write a big lump of code
+6. Break your code into pieces
+7. Keep writing code
+
+[Great Link](https://betterprogramming.pub/application-logging-best-practices-a-support-engineers-perspective-b17d0ef1c5df)
+
+So they thought, well, why don't I just copy and paste that code because it's pretty much the same thing?
+
+Dan Abramov's Monster (Abstraction Hell)
+1. Abstraction Birth - You're working on a new feature and notice that something very similar to the feature was already implemented in another file.  So you simply extract that code to a separate module and make those two files depend on that new code. 
+   
+![Abstraction 1](images/AHA_Step_2.png)
+1. Another Feature - Time goes by and you get another feature request that needs something close to the abstraction except instead of being async, it needs to be synchronous. But's it's the same shape and you don't want to repeat yourself (Keep it DRY) so you decide to get fancy and unify the two parts to handle both cases. It looks a bit unorthodox, but that's what happens when code meets real life, right? You make some compromises, and at least we didn't have to duplicate the code.
+2. A Bug - New feature actually needs slightly difference code than the original abstraction. No problem, just add a special if statement for it.  
+3. Another Bug - Next you find the original abstraction has a bug too, making the original and following code even more different. Another special case is added to the account for it. ![Abstraction 4](images/AHA_Step_4.png)
+4. An Ugly Abstraction - The abstraction now looks a bit weird and intimidating so we make it more generic. Why do we have all those special cases in the abstraction? So we pull them out of the abstraction and place them into our concrete use cases, making the abstraction much better. Now our abstraction doesn't know about any concrete cases. It is very generic, very beautiful. Nobody really understands what it represents anymore. Oh, by the way, we need to add, now that it's parametrized from different places, we need to make sure that all code size are parametrized. ![Abstraction 5](images/AHA_Step_5.png)
+5. A New Team - The gradual progression at each step makes sense to the people writing and reviewing the code but then time passes. Some people leave, some people join. There were many fixes. Eventually, somebody needs to make one small fix here. I don't really know what this thing is supposed to be doing but just fix it up a little bit, add this new feature, improve the metrics. So we ended up with something like this. And the story ends because no one wants to touch it and it's eventually rewritten. ![Abstraction 6](images/AHA_Step_6.png)
+
+
+Moral of Story: each of those individual steps kind of made sense. But if you lose track of what you were trying to do originally, you don't really know that you have a cyclical dependency or this weird thing that is growing somewhere to the side just because you don't see the whole picture anymore. And, of course, in real life, that's actually where the story ends because nobody wanted to touch the part of the code base and it just was stagnant for a long time and then somebody rewrote it. And maybe got a promotion. I don't know.
+
+Maybe a better way?  Inline the abstraction. literally take that code and just copy and paste it back to the places that use it. And that creates some duplication but that destroys that potential monster we were in the process of creating. And of course duplication isn't perfect in long term, but wrong abstraction is also not perfect in long term. So we need to balance these two problems. And so the way this helps us is that now if we have a bug here and we realized actually this thing is supposed to do something different, we can just change it. And it doesn't affect any of the other places because it's isolated. And similarly, maybe we get a different bug here and we also change it.
+
+Even so, the easiest code to delete is the code you avoided writing in the first place.
+
+A Self-Perpetuating Loop
+
+what happens is that developers learn best practices from the previous generation and they try to follow them. Because there were concrete problems and concrete solutions that were born out of experience. And so the next generation tries to pass them on. But it's hard to explain all this context and all this trade off, so they just get flattened into these ideas of best practices and anti-patterns.
+
+And so they get taught to the new generation. But if the new generation doesn't understand the trade offs and the reasons they came to these conclusions, they don't have the context to decide when it's actually a bad idea and how far can you stretch this. So they run into their own problems from trying to take these best practices and anti-patterns to extreme. And so they teach the next generation. And maybe this is just you can't break out of this loop and it's just bound to happen over and over again, which is maybe fine.
+
+I think one way to try to break this loop is just when we teach something to the next generation, we shouldn't just be two-dimensional and say here's best practices and anti-patterns. But we should try to explain what is it that you're actually trading away. What are the benefits and what are the costs of this idea?
+
+Example of explaining the cost/benefit using abstractions
+- abstractions let you focus on a specific intent, right? It's actually really nice to be able to focus on a specific layer. Maybe you have several places of code where you send an email and you don't want to know how an email is-- I don't know how emails are being sent. It's a mystery to me that they even arrive. But I can call a function called send email and well, it works most of the times. And it's really nice to be able to focus on it. And of course another benefit is just being able to reuse code written by you or other people and not remember how it actually works. If we need something, exactly the same thing that we already use from different places, it's very nice to be able to reuse it.
+- avoid some some bugs. So in the example where we have a bug, maybe we copy pasted something. And that's an argument against copy paste, is we copy pasted something and then we found the bug in one version and we fix it, but then the other version stays broken because we forgot about the copy paste. So that's a good argument for why you'd want to extract something and pull it away.
+- abstraction creates accidental coupling. And what I mean by that is, so we have these two modules using some abstraction, and then we realize that one of them has a bug. And we have to fix it in the abstraction because that's literally where the code is. But now it's your responsibility to consider all of the other call sites of this abstraction and whether you might have actually introduced a fix in another, introduced the bug in another part of the code base.
+- the extra indirection an abstraction can create. So what I mean by that is that the promise was that I would just be able to focus on this specific layer in my code and not actually care about all the layers. Is that really what happens? I'm sure most of you probably had this bug where you started one layer, oh, it goes here. And it's like, well, actually, no. You need to understand this layer and this other layer because the bug, it goes across all of those layers. And we have a very limited stack in our heads. And so what happens is you just get a stack will fall, which is probably why the site was coded that way. And so what I see happen a lot is that we try so hard to avoid the spaghetti code that we create this lasagna code where there are so many layers that you don't know what's going on anymore at all. So that's extra indirection. And all of them wouldn't be that bad if they didn't entrench themselves.
+
+Moral: Always explain what exactly are you trading away and which things led us to that to that principle or idea. And what is the expiration date for those problems? Because sometimes there is some context that is assumed and that context actually changes but you don't realize that. And so the next generation needs to understand what exactly was traded off and why.
+
+For more on all of this please watch [Dan's talk](https://www.deconstructconf.com/2019/dan-abramov-the-wet-codebase) where he breaks it down far better than I have here. 
+
+> Easy-to-replace systems tend to get replaced with hard-to-replace systems
+
+And it's similar that if something is easy to replace, it will probably get replaced. And then at some point you hit the limit where it's just a mess and nobody understands how it works.
+
+
+Every line of code written comes at a price: maintenance. To avoid paying for a lot of code, we build reusable software. The problem with code re-use is that it gets in the way of changing your mind later on.
+
+[Use cognitive complexity to measure understandability](https://www.sonarsource.com/docs/CognitiveComplexity.pdf)
